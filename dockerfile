@@ -10,7 +10,7 @@ COPY . .
 
 
 RUN bun install
-RUN bunx --bun prisma generate
+RUN bunx prisma generate
 
 EXPOSE 3001
 
