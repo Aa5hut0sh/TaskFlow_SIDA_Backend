@@ -17,4 +17,4 @@ RUN bunx prisma generate
 
 EXPOSE 3001
 
-CMD ["bun", "run","--cwd", "index.ts"]
+CMD ["bun", "run", "index.ts"]
