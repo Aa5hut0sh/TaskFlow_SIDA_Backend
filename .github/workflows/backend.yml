@@ -1,0 +1,49 @@
+on:
+  push:
+    branches:
+        - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Build and push http-backend image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/taskflow-backend:prod
+
+      - name: Deploy to Production Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            sudo docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/taskflow-backend:prod 
+            # Use the EXACT name you defined in the --name flag below
+            sudo docker stop taskflow-backend || true
+            sudo docker rm taskflow-backend || true
+            sudo docker run -d -p 3001:3001 --name taskflow-backend \
+            -e JWT_SECRET="${{secrets.JWT_SECRET}}" -e ADMIN_SECRET="${{secrets.ADMIN_SECRET}}" -e DATABASE_URL="${{secrets.DATABASE_URL}}" \
+            -e DISCORD_WEBHOOK_URL_PROJECT="${{secrets.DISCORD_WEBHOOK_URL_PROJECT}}" -eDISCORD_WEBHOOK_URL_TASK="${{secrets.DISCORD_WEBHOOK_URL_TASK}}"\
+            -e AWS_ACCESS_KEY_ID="${{secrets.AWS_ACCESS_KEY_ID}}" -e AWS_SECRET_ACCESS_KEY="${{secrets.AWS_SECRET_ACCESS_KEY}}" -e AWS_REGION="${{secrets.AWS_REGION}}" -e AWS_S3_BUCKET_NAME="${{secrets.AWS_S3_BUCKET_NAME}}" \
+            ${{ secrets.DOCKER_HUB_USERNAME }}/taskflow-backend:prod
+
+
+    
