@@ -38,6 +38,8 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             sudo docker run -d -p 3001:3001 --name taskflow-backend \
+            sudo docker stop taskflow-backend || true
+            sudo docker rm taskflow-backend || true
             -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
             -e ADMIN_SECRET="${{ secrets.ADMIN_SECRET }}" \
             -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
